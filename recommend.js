@@ -32,12 +32,14 @@ if (userInput.length !== 2) {
 };
 
 
-console.log('\n\nWelcome to the GitHub Recommender! Commencing lookup in 3...2...1...\n');
+console.log(`\n==================================
+            \nWelcome to the GitHub Recommender!
+            `);
 
 getRepoContributors = (owner, repo, callback) => {
 
   // Creates URL for HTTP GET Request using requestor's username and API token
-  // and desired repository account / repo name to pull thumbnails from:
+  // and desired repository account / repo name to pull contributors from:
   var requestURL = 'https://'+ GITHUB_USER + ':' + GITHUB_TOKEN + '@api.github.com/repos/' + owner + '/' + repo + '/contributors';
 
   // Assigns the URL and User-Agent for GET request:
@@ -90,23 +92,32 @@ getRepoContributors(githubAccount, githubRepo, ((error, response) => {
     contributors.push(response.login);
   });
 
-  console.log(`Sourcing starred repos for the following contributors:
-              \n===========
+  console.log(`\nSourcing starred repos for the following contributors:
               \n${contributors.join(', ')}
-              \n===========`);
+              \n(Total ${contributors.length})
+              \n==================================
+              `);
 
   lookupStarredRepos(contributors, ((error, response) => {
-    returnSort(response);
+    if (response.round === contributors.length) {
+      console.log(`Finished!\n`)
+      console.log(`Here's what we found:\n`)
+    returnSort(response.data);
+    }
   }));
 
 }));
 
 lookupStarredRepos = (users, callback) => {
 
-  var placeholderObj = {};
+  var placeholderObj = { round: 0, data: {} };
+  let i = 0;
+  let j = 0;
 
   users.forEach((e) => {
-    let starredUrl = `https://${GITHUB_USER}:${GITHUB_TOKEN}@api.github.com/users/${e}/starred`;
+    // Creates URL for HTTP GET Request using requestor's username and API token
+    // and each project contributor to pull starred repos from:
+    let starredUrl = `https://${GITHUB_USER}:${GITHUB_TOKEN}@api.github.com/users/${e}/starred?per_page=100`;
 
     var options = {
       'url': starredUrl,
@@ -116,7 +127,11 @@ lookupStarredRepos = (users, callback) => {
       }
     };
 
+
     request(options, ((error, response, body) => {
+
+      i++;
+      placeholderObj.round = i;
 
       if (error) {
         console.log(error);
@@ -124,26 +139,28 @@ lookupStarredRepos = (users, callback) => {
       // Parses JSON body
       var starredItem = JSON.parse(body);
 
+      // Halt process if user has zero starred repos
       if (starredItem.length > 0) {
+        // Iterate through every starred item, storing only the full_name
+        // of each in a placeholder Object
         starredItem.forEach((e) => {
           let name = e.full_name;
-          if (placeholderObj[name] == undefined) {
-            placeholderObj[name] = 1;
+          // Track instances of each starred item
+          if (placeholderObj.data[name] == undefined) {
+            placeholderObj.data[name] = 1;
           } else {
-            placeholderObj[name]++;
+            placeholderObj.data[name]++;
           };
         });
       };
+      console.log("Working.....\n")
       callback(null, placeholderObj);
     }));
   });
 };
 
+// Sort all starred items by popularity
 returnSort = (object) => {
-
-  if (Object.getOwnPropertyNames(object).length == 0) {
-    return;
-  };
 
   var sortable = [];
   for (var x in object) {
@@ -154,11 +171,17 @@ returnSort = (object) => {
     return b[1] - a[1];
   });
 
+  // Return only the top 5
   var sliced_array = sortable.slice(0, 5);
 
+  // Log the top 5 starred items to console
   for (i in sliced_array) {
     console.log(`[ ${sliced_array[i][1]} stars ] ${sliced_array[i][0]}`);
   };
-  console.log('===========')
+  console.log(`
+              \n
+              Task completed. Have a nice day!
+              \n
+              `);
 
 };
