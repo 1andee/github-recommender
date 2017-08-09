@@ -1,0 +1,20 @@
+{
+  "name": "github-recommender",
+  "version": "1.0.0",
+  "description": "A command line node app that uses HTTP to retrieve content from GitHub and make recommendations based on contributors.",
+  "main": "recommend.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Ian Duke",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/1andee/github-recommender/"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^4.0.0",
+    "request": "^2.81.0"
+  }
+}
