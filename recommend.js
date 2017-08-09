@@ -62,7 +62,7 @@ if (!process.env.GITHUB_USER ||
       }));
     };
 
-    // Iterates through JSON data, passing avatar URL and user ID into downloadImageByURL():
+    // Iterates through JSON data, passing user ID into lookupStarredRepos():
     getRepoContributors(githubAccount, githubRepo, ((error, response) => {
       if (error) {
         throw error;
@@ -97,14 +97,20 @@ if (!process.env.GITHUB_USER ||
         \n==================================
         `);
 
+        // Call lookupStarredRepos() function with list of contributors
+        // Passes list of starred repos to returnSort() once all are retrieved
         lookupStarredRepos(contributors, ((error, response) => {
           if (error) {
             throw error;
           };
 
+          // Checks whether # of lookups matches # of contributors
           if (response.round === contributors.length) {
             console.log(`Finished!\n`)
             console.log(`Here's what we found that might be of interest:\n`)
+
+            // Passes response.data (placeholderObj) to returnSort()
+            // for sorting by popularity and output to console
             returnSort(response.data);
           };
 
@@ -112,15 +118,17 @@ if (!process.env.GITHUB_USER ||
 
       }));
 
+      // Takes array of contributors and makes API call to retrieve starred repos for each
       lookupStarredRepos = (users, callback) => {
 
+        // Track number of times the callback is made
         var placeholderObj = { round: 0, data: {} };
         let i = 0;
-        let j = 0;
 
+        // Iterate through every contributor
         users.forEach((e) => {
+
           // Creates URL for HTTP GET Request using requestor's username and API token
-          // and each project contributor to pull starred repos from:
           let starredUrl = `https://${GITHUB_USER}:${GITHUB_TOKEN}@api.github.com/users/${e}/starred?per_page=100`;
 
           var options = {
@@ -131,8 +139,10 @@ if (!process.env.GITHUB_USER ||
             }
           };
 
+          // Executes GET request,
           request(options, ((error, response, body) => {
 
+            // Track number of requests made
             i++;
             placeholderObj.round = i;
 
@@ -143,13 +153,15 @@ if (!process.env.GITHUB_USER ||
             // Parses JSON body
             var starredItem = JSON.parse(body);
 
-            // Halt process if user has zero starred repos
+            // Makes sure the contributor actually has starred repos
             if (starredItem.length > 0) {
-              // Iterate through every starred item, storing only the full_name
-              // of each in a placeholder Object
+
+              // Iterate through each starred repo, storing the full_name
+              // and total # of instances in placeholderObj.data
               starredItem.forEach((e) => {
                 let name = e.full_name;
                 let placeholder = placeholderObj.data;
+
                 // Track instances of each starred item
                 if (placeholder[name] == undefined) {
                   placeholder[name] = 1;
@@ -158,7 +170,10 @@ if (!process.env.GITHUB_USER ||
                 };
               });
             };
+
             console.log("Working.....\n")
+
+            // Returns placeholderObj as callback response
             callback(null, placeholderObj);
           }));
         });
@@ -176,17 +191,18 @@ if (!process.env.GITHUB_USER ||
           return b[1] - a[1];
         });
 
-        // Return only the top 5
+        // Return only the top 5 repos
         var sliced_array = sortable.slice(0, 5);
 
-        // Log the top 5 starred items to console
+        // Log the top 5 starred repos to console
         for (i in sliced_array) {
           console.log(`[ ${sliced_array[i][1]} stars ] ${sliced_array[i][0]}`);
         };
+
         console.log(`
           \n
           Task completed. Have a nice day!
           \n
           `);
 
-        };
+      };
